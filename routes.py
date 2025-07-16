@@ -3,6 +3,7 @@ from models import stories_collection, likes_collection, comments_collection, ti
 from bson import ObjectId
 import datetime
 from nft import mint_story_nft
+import traceback  # ✅ per mostrare dettagli errore
 
 routes = Blueprint("routes", __name__)
 
@@ -40,7 +41,8 @@ def create_story():
         }), 201
 
     except Exception as e:
-        print("❌ ERRORE BACKEND:", str(e))
+        print("❌ ERRORE BACKEND POST /stories:", str(e))
+        traceback.print_exc()  # ✅ stampa dettagliati
         return jsonify({
             "error": "Internal server error",
             "details": str(e)
@@ -56,6 +58,7 @@ def get_stories():
         return jsonify(stories)
     except Exception as e:
         print("❌ ERRORE BACKEND GET /stories:", str(e))
+        traceback.print_exc()  # ✅
         return jsonify({"error": "Internal server error"}), 500
 
 
@@ -74,6 +77,7 @@ def like_story():
         return jsonify({"message": "Like registered", "cost": 500})
     except Exception as e:
         print("❌ ERRORE BACKEND /like:", str(e))
+        traceback.print_exc()  # ✅
         return jsonify({"error": "Internal server error"}), 500
 
 
@@ -91,6 +95,7 @@ def comment_story():
         return jsonify({"message": "Comment saved", "cost": 500})
     except Exception as e:
         print("❌ ERRORE BACKEND /comment:", str(e))
+        traceback.print_exc()  # ✅
         return jsonify({"error": "Internal server error"}), 500
 
 
@@ -108,4 +113,5 @@ def tip_story():
         return jsonify({"message": "Tip sent!"})
     except Exception as e:
         print("❌ ERRORE BACKEND /tip:", str(e))
+        traceback.print_exc()  # ✅
         return jsonify({"error": "Internal server error"}), 500
