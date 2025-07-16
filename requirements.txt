@@ -1,5 +1,5 @@
 flask
 flask-cors
-pymongo
+pymongo==4.6.1
 python-dotenv
 algosdk
