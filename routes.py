@@ -8,23 +8,27 @@ routes = Blueprint("routes", __name__)
 
 @routes.route("/stories", methods=["POST"])
 def create_story():
-    data = request.json
-    story_text = data["content"]
-    wallet = data["wallet"]
-
     try:
-        # 1. Salva la storia
+        data = request.json
+        print("📥 Dati ricevuti:", data)
+
+        story_text = data["content"]
+        wallet = data["wallet"]
+
+        # 1. Salva la storia su MongoDB
         story = {
             "wallet": wallet,
             "content": story_text,
             "timestamp": datetime.datetime.utcnow()
         }
         result = stories_collection.insert_one(story)
+        print("✅ Storia salvata con ID:", result.inserted_id)
 
-        # 2. Mint NFT su Algorand
+        # 2. Mint dell’NFT su Algorand
         asset_id = mint_story_nft(story_text)
+        print("🪙 NFT creato con ID:", asset_id)
 
-        # 3. Aggiungi l'nft_id al documento
+        # 3. Aggiungi l'ID dell'NFT al documento
         stories_collection.update_one(
             {"_id": result.inserted_id},
             {"$set": {"nft_id": asset_id}}
@@ -42,46 +46,66 @@ def create_story():
             "details": str(e)
         }), 500
 
+
 @routes.route("/stories", methods=["GET"])
 def get_stories():
-    stories = list(stories_collection.find().sort("timestamp", -1))
-    for s in stories:
-        s["_id"] = str(s["_id"])
-    return jsonify(stories)
+    try:
+        stories = list(stories_collection.find().sort("timestamp", -1))
+        for s in stories:
+            s["_id"] = str(s["_id"])
+        return jsonify(stories)
+    except Exception as e:
+        print("❌ ERRORE BACKEND GET /stories:", str(e))
+        return jsonify({"error": "Internal server error"}), 500
+
 
 @routes.route("/like", methods=["POST"])
 def like_story():
-    data = request.json
-    story_id = data["story_id"]
-    wallet = data["wallet"]
+    try:
+        data = request.json
+        story_id = data["story_id"]
+        wallet = data["wallet"]
 
-    existing = likes_collection.find_one({"story_id": story_id, "wallet": wallet})
-    if existing:
-        return jsonify({"message": "Already liked"}), 400
+        existing = likes_collection.find_one({"story_id": story_id, "wallet": wallet})
+        if existing:
+            return jsonify({"message": "Already liked"}), 400
 
-    likes_collection.insert_one({"story_id": story_id, "wallet": wallet})
-    return jsonify({"message": "Like registered", "cost": 500})
+        likes_collection.insert_one({"story_id": story_id, "wallet": wallet})
+        return jsonify({"message": "Like registered", "cost": 500})
+    except Exception as e:
+        print("❌ ERRORE BACKEND /like:", str(e))
+        return jsonify({"error": "Internal server error"}), 500
+
 
 @routes.route("/comment", methods=["POST"])
 def comment_story():
-    data = request.json
-    comment = {
-        "story_id": data["story_id"],
-        "wallet": data["wallet"],
-        "text": data["text"],
-        "timestamp": datetime.datetime.utcnow()
-    }
-    comments_collection.insert_one(comment)
-    return jsonify({"message": "Comment saved", "cost": 500})
+    try:
+        data = request.json
+        comment = {
+            "story_id": data["story_id"],
+            "wallet": data["wallet"],
+            "text": data["text"],
+            "timestamp": datetime.datetime.utcnow()
+        }
+        comments_collection.insert_one(comment)
+        return jsonify({"message": "Comment saved", "cost": 500})
+    except Exception as e:
+        print("❌ ERRORE BACKEND /comment:", str(e))
+        return jsonify({"error": "Internal server error"}), 500
+
 
 @routes.route("/tip", methods=["POST"])
 def tip_story():
-    data = request.json
-    tip = {
-        "story_id": data["story_id"],
-        "wallet": data["wallet"],
-        "amount": data["amount"],
-        "timestamp": datetime.datetime.utcnow()
-    }
-    tips_collection.insert_one(tip)
-    return jsonify({"message": "Tip sent!"})
+    try:
+        data = request.json
+        tip = {
+            "story_id": data["story_id"],
+            "wallet": data["wallet"],
+            "amount": data["amount"],
+            "timestamp": datetime.datetime.utcnow()
+        }
+        tips_collection.insert_one(tip)
+        return jsonify({"message": "Tip sent!"})
+    except Exception as e:
+        print("❌ ERRORE BACKEND /tip:", str(e))
+        return jsonify({"error": "Internal server error"}), 500
