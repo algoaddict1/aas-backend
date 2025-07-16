@@ -13,18 +13,34 @@ def create_story():
     wallet = data["wallet"]
 
     try:
-        asset_id = mint_story_nft(story_text)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        # 1. Salva la storia
+        story = {
+            "wallet": wallet,
+            "content": story_text,
+            "timestamp": datetime.datetime.utcnow()
+        }
+        result = stories_collection.insert_one(story)
 
-    story = {
-        "wallet": wallet,
-        "content": story_text,
-        "nft_id": asset_id,
-        "timestamp": datetime.datetime.utcnow()
-    }
-    stories_collection.insert_one(story)
-    return jsonify({"message": "Story saved & NFT minted!", "nft_id": asset_id}), 201
+        # 2. Mint NFT su Algorand
+        asset_id = mint_story_nft(story_text)
+
+        # 3. Aggiungi l'nft_id al documento
+        stories_collection.update_one(
+            {"_id": result.inserted_id},
+            {"$set": {"nft_id": asset_id}}
+        )
+
+        return jsonify({
+            "message": "Story saved & NFT minted!",
+            "nft_id": asset_id
+        }), 201
+
+    except Exception as e:
+        print("❌ ERRORE BACKEND:", str(e))
+        return jsonify({
+            "error": "Internal server error",
+            "details": str(e)
+        }), 500
 
 @routes.route("/stories", methods=["GET"])
 def get_stories():
