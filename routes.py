@@ -2,19 +2,29 @@ from flask import Blueprint, request, jsonify
 from models import stories_collection, likes_collection, comments_collection, tips_collection
 from bson import ObjectId
 import datetime
+from nft import mint_story_nft
 
 routes = Blueprint("routes", __name__)
 
 @routes.route("/stories", methods=["POST"])
 def create_story():
     data = request.json
+    story_text = data["content"]
+    wallet = data["wallet"]
+
+    try:
+        asset_id = mint_story_nft(story_text)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
     story = {
-        "wallet": data["wallet"],
-        "content": data["content"],
+        "wallet": wallet,
+        "content": story_text,
+        "nft_id": asset_id,
         "timestamp": datetime.datetime.utcnow()
     }
     stories_collection.insert_one(story)
-    return jsonify({"message": "Story saved!"}), 201
+    return jsonify({"message": "Story saved & NFT minted!", "nft_id": asset_id}), 201
 
 @routes.route("/stories", methods=["GET"])
 def get_stories():
