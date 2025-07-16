@@ -1,3 +1,5 @@
+import socket
+socket.setdefaultfamily(socket.AF_INET)
 from flask import Flask
 from flask_cors import CORS
 from routes import routes
